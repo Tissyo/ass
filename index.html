@@ -77,13 +77,22 @@
             .page-break { page-break-after: always; }
         }
 
-        /* 隐藏滚动条但保留功能 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* 动画 */
-        .fade-enter { opacity: 0; transform: translateY(8px); }
-        .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.4s ease-out; }
+        #error-boundary {
+            display: none;
+            padding: 2rem;
+            text-align: center;
+            font-family: sans-serif;
+            background: white;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 
     <script type="importmap">
@@ -101,6 +110,23 @@
 </head>
 <body>
     <div id="root"></div>
-    <script type="text/babel" data-type="module" src="index.tsx"></script>
+    <div id="error-boundary">
+        <h1 style="color: #e11d48; font-size: 24px; margin-bottom: 1rem;">应用启动失败</h1>
+        <p style="color: #64748b; margin-bottom: 2rem;">可能是由于浏览器缓存或路径配置问题。</p>
+        <button onclick="location.reload()" style="padding: 12px 24px; background: #0d9488; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer;">刷新页面</button>
+    </div>
+
+    <script type="text/babel" data-type="module">
+        import './index.tsx';
+    </script>
+
+    <script>
+        setTimeout(() => {
+            const root = document.getElementById('root');
+            if (root && root.innerHTML.trim() === '') {
+                document.getElementById('error-boundary').style.display = 'flex';
+            }
+        }, 3000);
+    </script>
 </body>
 </html>

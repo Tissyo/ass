@@ -8,9 +8,10 @@ interface Props {
   pcl5: PCL5Data;
   onUCLAChange: (val: UCLAPTSDData) => void;
   onPCL5Change: (val: PCL5Data) => void;
+  onSkipToResilience: () => void;
 }
 
-const TraumaAssessment: React.FC<Props> = ({ isAdult, ucla, pcl5, onUCLAChange, onPCL5Change }) => {
+const TraumaAssessment: React.FC<Props> = ({ isAdult, ucla, pcl5, onUCLAChange, onPCL5Change, onSkipToResilience }) => {
   const historyFields: { key: keyof TraumaHistory; label: string }[] = [
     { key: 'naturalDisaster', label: '自然灾害：地震、洪水、飓风、大火等' },
     { key: 'accident', label: '意外事故：严重车祸、高空坠落、溺水等' },
@@ -23,22 +24,45 @@ const TraumaAssessment: React.FC<Props> = ({ isAdult, ucla, pcl5, onUCLAChange, 
 
   const handleHistoryToggle = (key: keyof TraumaHistory) => {
     if (isAdult) {
-      onPCL5Change({ ...pcl5, history: { ...pcl5.history, [key]: !pcl5.history[key] } });
+      onPCL5Change({ 
+        ...pcl5, 
+        history: { ...pcl5.history, [key]: !pcl5.history[key], none: false } 
+      });
     } else {
-      onUCLAChange({ ...ucla, history: { ...ucla.history, [key]: !ucla.history[key] } });
+      onUCLAChange({ 
+        ...ucla, 
+        history: { ...ucla.history, [key]: !ucla.history[key], none: false } 
+      });
     }
+  };
+
+  const handleNone = () => {
+    const emptyHistory: TraumaHistory = {
+      none: true,
+      naturalDisaster: false,
+      accident: false,
+      witnessViolence: false,
+      physicalAbuse: false,
+      sexualTrauma: false,
+      loss: false,
+      medicalTrauma: false
+    };
+    if (isAdult) {
+      onPCL5Change({ ...pcl5, history: emptyHistory, scores: {}, totalScore: 0 });
+    } else {
+      onUCLAChange({ ...ucla, history: emptyHistory, scores: {}, totalScore: 0 });
+    }
+    onSkipToResilience();
   };
 
   const handleScore = (id: number, score: number) => {
     const key = id.toString();
     if (isAdult) {
       const newScores = { ...pcl5.scores, [key]: score };
-      // Fix: Explicitly type reduce generic as number to avoid unknown type errors in arithmetic addition.
       const total = Object.values(newScores).reduce<number>((a, b) => a + (Number(b) || 0), 0);
       onPCL5Change({ ...pcl5, scores: newScores, totalScore: total });
     } else {
       const newScores = { ...ucla.scores, [key]: score };
-      // Fix: Explicitly type reduce generic as number to avoid unknown type errors in arithmetic addition.
       const total = Object.values(newScores).reduce<number>((a, b) => a + (Number(b) || 0), 0);
       onUCLAChange({ ...ucla, scores: newScores, totalScore: total });
     }
@@ -111,6 +135,15 @@ const TraumaAssessment: React.FC<Props> = ({ isAdult, ucla, pcl5, onUCLAChange, 
       <div className="mb-10">
         <h3 className="font-bold text-slate-700 mb-4">A. 创伤历史概况 (Trauma History)</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <label className={`flex items-center p-3 rounded-lg border transition-all cursor-pointer ${activeHistory.none ? 'bg-slate-100 border-slate-400' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+            <input 
+              type="checkbox" 
+              checked={activeHistory.none}
+              onChange={handleNone}
+              className="w-4 h-4 text-slate-600 mr-3"
+            />
+            <span className="text-sm font-bold text-slate-700">无 (无下述任何创伤历史)</span>
+          </label>
           {historyFields.map(f => (
             <label key={f.key} className="flex items-center p-3 bg-white border border-slate-200 rounded-lg hover:border-purple-300 transition-all cursor-pointer">
               <input 
@@ -125,42 +158,44 @@ const TraumaAssessment: React.FC<Props> = ({ isAdult, ucla, pcl5, onUCLAChange, 
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-slate-50 text-slate-500 text-xs font-bold">
-              <th className="p-4 border-b">维度</th>
-              <th className="p-4 border-b">条目内容</th>
-              <th className="p-4 border-b text-center">评分 (0-4)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {activeQuestions.map(q => (
-              <tr key={q.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                <td className="p-4 text-xs font-bold text-purple-500 whitespace-nowrap">{q.grp}</td>
-                <td className="p-4 text-sm text-slate-700">{q.text}</td>
-                <td className="p-4">
-                  <div className="flex justify-center space-x-1">
-                    {[0,1,2,3,4].map(s => (
-                      <button
-                        key={s}
-                        onClick={() => handleScore(q.id, s)}
-                        className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${
-                          activeScores[q.id.toString()] === s 
-                            ? 'bg-purple-600 text-white shadow-md transform scale-110' 
-                            : 'bg-white text-slate-400 border border-slate-200 hover:border-purple-300'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </td>
+      {!activeHistory.none && (
+        <div className="overflow-x-auto animate-in fade-in duration-500">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 text-xs font-bold">
+                <th className="p-4 border-b">维度</th>
+                <th className="p-4 border-b">条目内容</th>
+                <th className="p-4 border-b text-center">评分 (0-4)</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {activeQuestions.map(q => (
+                <tr key={q.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="p-4 text-xs font-bold text-purple-500 whitespace-nowrap">{q.grp}</td>
+                  <td className="p-4 text-sm text-slate-700">{q.text}</td>
+                  <td className="p-4">
+                    <div className="flex justify-center space-x-1">
+                      {[0,1,2,3,4].map(s => (
+                        <button
+                          key={s}
+                          onClick={() => handleScore(q.id, s)}
+                          className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${
+                            activeScores[q.id.toString()] === s 
+                              ? 'bg-purple-600 text-white shadow-md transform scale-110' 
+                              : 'bg-white text-slate-400 border border-slate-200 hover:border-purple-300'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 };

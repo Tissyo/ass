@@ -26,6 +26,7 @@ export interface CSSRSData {
 }
 
 export interface TraumaHistory {
+  none: boolean;
   naturalDisaster: boolean;
   accident: boolean;
   witnessViolence: boolean;

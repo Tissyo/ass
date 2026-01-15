@@ -1,18 +1,19 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { CSSRSData } from '../types';
 
 interface Props {
   data: CSSRSData;
   onChange: (val: CSSRSData) => void;
+  onReset: () => void;
 }
 
-const RiskScreening: React.FC<Props> = ({ data, onChange }) => {
+const RiskScreening: React.FC<Props> = ({ data, onChange, onReset }) => {
+  const [showReferralGuideline, setShowReferralGuideline] = useState(false);
   const toggle = (field: keyof CSSRSData, val: boolean) => onChange({ ...data, [field]: val });
 
   const isAnyIdeation = data.q1 === true || data.q2 === true;
   const isHighRisk = data.q4 === true || data.q5 === true || data.q6 === true;
-  const isModerateRisk = (data.q1 === true || data.q2 === true) && !isHighRisk;
 
   return (
     <section>
@@ -78,18 +79,67 @@ const RiskScreening: React.FC<Props> = ({ data, onChange }) => {
             isAlert={true}
           />
         </div>
+
+        {/* 红色预警触发后的立即操作选项 */}
+        {isHighRisk && (
+          <div className="mt-12 p-10 bg-rose-600 rounded-4xl text-white shadow-2xl shadow-rose-200 animate-in zoom-in duration-500">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="flex-1">
+                <h3 className="serif text-2xl mb-2">已触发危机干预协议</h3>
+                <p className="text-rose-100 text-sm leading-relaxed opacity-90">来访者存在极高安全风险。临床伦理要求必须立即停止常规测量，转入危机处置流程。</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+                <button 
+                  onClick={() => setShowReferralGuideline(!showReferralGuideline)}
+                  className="px-8 py-4 bg-white text-rose-600 rounded-2xl font-bold hover:bg-rose-50 transition-all flex items-center justify-center shadow-lg"
+                >
+                  {showReferralGuideline ? '隐藏指南' : '立即转介'}
+                </button>
+                <button 
+                  onClick={onReset}
+                  className="px-8 py-4 bg-rose-800 text-white rounded-2xl font-bold hover:bg-rose-900 transition-all shadow-lg"
+                >
+                  结束流程
+                </button>
+              </div>
+            </div>
+
+            {showReferralGuideline && (
+              <div className="mt-8 pt-8 border-t border-rose-500/50 space-y-4 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-rose-700/50 p-4 rounded-2xl">
+                    <p className="text-xs font-black text-rose-300 uppercase mb-2">第一步：家属通知</p>
+                    <p className="text-xs">立即联系紧急联系人，要求家属到场，严禁来访者独自离开。</p>
+                  </div>
+                  <div className="bg-rose-700/50 p-4 rounded-2xl">
+                    <p className="text-xs font-black text-rose-300 uppercase mb-2">第二步：物理安全</p>
+                    <p className="text-xs">确保来访者视线不离开工作人员，移除其携带的危险品。</p>
+                  </div>
+                  <div className="bg-rose-700/50 p-4 rounded-2xl">
+                    <p className="text-xs font-black text-rose-300 uppercase mb-2">第三步：医疗转介</p>
+                    <p className="text-xs">护送至精神专科医院急诊。若家属拒不配合，必要时拨打110/120。</p>
+                  </div>
+                  <div className="bg-rose-700/50 p-4 rounded-2xl">
+                    <p className="text-xs font-black text-rose-300 uppercase mb-2">第四步：文书留档</p>
+                    <p className="text-xs">导出此报告，并完成《安全知情同意书》及《干预记录单》签署。</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
 };
 
 const QuestionItem: React.FC<{ label: string; desc: string; val: boolean | null; onToggle: (v: boolean) => void; isAlert?: boolean }> = ({ label, desc, val, onToggle, isAlert }) => (
-  <div className="flex justify-between items-center group">
+  <div className={`flex justify-between items-center group transition-opacity`}>
     <div className="max-w-xl">
       <h4 className={`font-bold text-sm mb-1 ${val === true && isAlert ? 'text-rose-600' : 'text-slate-800'}`}>{label}</h4>
       <p className="text-xs text-slate-400 group-hover:text-slate-500 transition-colors">{desc}</p>
     </div>
-    <div className="flex bg-warm-200/50 p-1 rounded-xl">
+    <div className="flex bg-warm-200/50 p-1 rounded-xl shrink-0 ml-4">
       <button 
         onClick={() => onToggle(true)}
         className={`px-6 py-2 rounded-lg text-xs font-black transition-all ${val === true ? (isAlert ? 'bg-rose-500 text-white shadow-lg' : 'bg-brand-600 text-white shadow-lg') : 'text-slate-400 hover:text-slate-600'}`}
