@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>见己 · 深度临床心理评估档案系统</title>
+    
+    <!-- PWA & Mobile Optimization -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" href="https://api.iconify.design/ri:psychotherapy-fill.svg?color=%230d9488" type="image/svg+xml">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                brand: {
+                  50: '#f0f9f9',
+                  100: '#d9f2f2',
+                  500: '#14b8b8',
+                  600: '#0d9488',
+                  700: '#0f766e',
+                  800: '#115e59',
+                },
+                warm: {
+                  50: '#FDFCFB',
+                  100: '#F8F7F4',
+                  200: '#F2F0EB'
+                }
+              },
+              borderRadius: {
+                '3xl': '1.5rem',
+                '4xl': '2rem',
+              }
+            }
+          }
+        }
+    </script>
+    
+    <script>
+        window.process = { env: { API_KEY: "" } };
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+
+        body {
+            background-color: #F8F7F4;
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: #334155;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, .serif {
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        .main-card {
+            background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .main-card { 
+                border: none !important; 
+                box-shadow: none !important; 
+                padding: 0 !important; 
+                background-image: none !important;
+            }
+            .page-break { page-break-after: always; }
+        }
+
+        /* 隐藏滚动条但保留功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 动画 */
+        .fade-enter { opacity: 0; transform: translateY(8px); }
+        .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.4s ease-out; }
+    </style>
+
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "@google/genai": "https://esm.sh/@google/genai",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel" data-type="module" src="index.tsx"></script>
+</body>
+</html>

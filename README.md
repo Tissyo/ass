@@ -1,11 +1,34 @@
-<div align="center">
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+# 见己 · 深度临床心理评估档案系统
 
-  <h1>Built with AI Studio</h2>
+专业级临床心理评估平台，支持 C-SSRS、UCLA、PCL-5 及复原力画像，具备 AI 辅助分析功能。
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## 1. 部署到 GitHub Pages (在线访问)
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+1. 将所有文件上传至 GitHub 仓库。
+2. 在 **Settings > Pages** 中开启服务，选择 `main` 分支部署。
 
-</div>
+## 2. 打包为 macOS 软件 (.dmg)
+
+如果您希望拥有桌面端的安装包，请在本地安装 Node.js 后执行以下操作：
+
+### 第一步：安装环境
+在项目文件夹下打开终端（Terminal），运行：
+```bash
+npm install
+```
+
+### 第二步：一键打包
+运行以下指令开始构建 `.dmg` 文件：
+```bash
+npm run dist
+```
+
+### 第三步：获取安装包
+打包完成后，你会发现项目根目录下多了一个 `dist/` 文件夹，里面那个 **`见己评估-1.0.0.dmg`** 就是你的 macOS 安装包。双击它，将“见己评估”拖动到 Applications 文件夹即可完成安装。
+
+## 核心特性
+
+- **数据隐私**：评估数据仅保存在您的本地浏览器/软件内，具备完全的离线可用性。
+- **原生体验**：桌面端支持隐藏标题栏和毛玻璃效果。
+- **专业导出**：支持打印或另存为 PDF。

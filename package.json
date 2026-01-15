@@ -1,0 +1,45 @@
+
+{
+  "name": "jianji-assessment",
+  "version": "1.0.0",
+  "description": "见己 · 深度临床心理评估档案系统",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac"
+  },
+  "author": "Jianji Psychology",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.jianji.assessment",
+    "productName": "见己评估",
+    "copyright": "Copyright © 2025 Jianji",
+    "mac": {
+      "category": "public.app-category.healthcare",
+      "target": ["dmg"],
+      "icon": "https://api.iconify.design/ri:psychotherapy-fill.svg?color=%230d9488"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 150
+        },
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "files": [
+      "**/*",
+      "!node_modules/*"
+    ]
+  }
+}
