@@ -36,10 +36,19 @@ export interface TraumaHistory {
   medicalTrauma: boolean;
 }
 
+export interface ChildAdventureData {
+  mood: string;
+  moodReason: string;
+  bodyMarkers: { x: number; y: number; type: 'bandaid' | 'circle' }[];
+  familyPositions: { id: string; x: number; y: number; scale: number; name: string }[];
+  wishes: string[];
+}
+
 export interface UCLAPTSDData {
   history: TraumaHistory;
   scores: Record<string, number>;
   totalScore: number;
+  adventure?: ChildAdventureData;
 }
 
 export interface PCL5Data {

@@ -68,16 +68,26 @@ const App: React.FC = () => {
   };
 
   const generateAIFormulation = async () => {
-    if (!process.env.API_KEY) {
-      alert("请配置 API_KEY。");
-      return;
-    }
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `你是一位临床心理专家。基于：[基本信息] ${JSON.stringify(data.patient)}，[风险] C-SSRS: ${JSON.stringify(data.cssrs)}，[总分] ${isAdult ? data.pcl5.totalScore : data.ucla.totalScore}。请写一份包含核心症状、风险等级、资源画像的专业临床画像，中文输出。`;
-      const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
-      if (response.text) setData(prev => ({ ...prev, summary: { ...prev.summary, clinicalFormulation: response.text } }));
-    } catch (e) { alert("生成失败"); }
+      const response = await ai.models.generateContent({ 
+        model: 'gemini-3-pro-preview', 
+        contents: prompt 
+      });
+      
+      if (response.text) {
+        setData(prev => ({ 
+          ...prev, 
+          summary: { 
+            ...prev.summary, 
+            clinicalFormulation: response.text 
+          } 
+        }));
+      }
+    } catch (e) { 
+      console.error("Clinical formulation generation failed:", e);
+    }
   };
 
   return (
@@ -156,7 +166,7 @@ const App: React.FC = () => {
           ) : (
             <div className="animate-in fade-in duration-500">
               {activeTab === 'basic' && <PatientInfoForm data={data.patient} onChange={(val) => setData(prev => ({ ...prev, patient: val }))} />}
-              {activeTab === 'risk' && <RiskScreening data={data.cssrs} onChange={(val) => setData(prev => ({ ...prev, cssrs: val }))} onReset={resetData} />}
+              {activeTab === 'risk' && <RiskScreening age={data.patient.age} data={data.cssrs} onChange={(val) => setData(prev => ({ ...prev, cssrs: val }))} onReset={resetData} />}
               {activeTab === 'trauma' && <TraumaAssessment isAdult={isAdult} ucla={data.ucla} pcl5={data.pcl5} onUCLAChange={(val) => setData(prev => ({ ...prev, ucla: val }))} onPCL5Change={(val) => setData(prev => ({ ...prev, pcl5: val }))} onSkipToResilience={() => setActiveTab('resilience')} />}
               {activeTab === 'resilience' && <ResilienceAssessment age={data.patient.age} data={data.resilience} onChange={(val) => setData(prev => ({ ...prev, resilience: val }))} />}
               {activeTab === 'summary' && <SummarySection data={data} onChange={(val) => setData(prev => ({ ...prev, summary: val }))} />}
