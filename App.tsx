@@ -70,18 +70,31 @@ const App: React.FC = () => {
   const generateAIFormulation = async () => {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `你是一位临床心理专家。基于：[基本信息] ${JSON.stringify(data.patient)}，[风险] C-SSRS: ${JSON.stringify(data.cssrs)}，[总分] ${isAdult ? data.pcl5.totalScore : data.ucla.totalScore}。请写一份包含核心症状、风险等级、资源画像的专业临床画像，中文输出。`;
+      // 增强提示词，明确禁止特定符号
+      const prompt = `你是一位临床心理专家。基于：[基本信息] ${JSON.stringify(data.patient)}，[风险] C-SSRS: ${JSON.stringify(data.cssrs)}，[总分] ${isAdult ? data.pcl5.totalScore : data.ucla.totalScore}。
+      请写一份包含核心症状、风险等级、资源画像的专业临床画像。
+      要求：
+      1. 使用中文输出。
+      2. 输出纯文字段落，严禁使用任何 Markdown 符号（如 #、*、- 等）。
+      3. 严禁使用列表格式，通过连贯的文字进行叙述。`;
+
       const response = await ai.models.generateContent({ 
         model: 'gemini-3-pro-preview', 
         contents: prompt 
       });
       
       if (response.text) {
+        // 后置处理：再次强制清洗可能出现的特殊符号
+        const cleanText = response.text
+          .replace(/[#*\-]/g, '')
+          .replace(/\n\s*\n/g, '\n') // 去除多余空行
+          .trim();
+
         setData(prev => ({ 
           ...prev, 
           summary: { 
             ...prev.summary, 
-            clinicalFormulation: response.text 
+            clinicalFormulation: cleanText 
           } 
         }));
       }
