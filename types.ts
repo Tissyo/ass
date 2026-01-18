@@ -11,6 +11,7 @@ export interface PatientInfo {
   id: string;
   clinician: string;
   source: InfoSource;
+  concerns: string[];
 }
 
 export interface CSSRSData {
@@ -60,8 +61,27 @@ export interface PCL5Data {
 }
 
 export interface AssessmentState {
+  config: {
+    enabledModules: string[];
+  };
   patient: PatientInfo;
   cssrs: CSSRSData;
+  family: {
+    genogram: string;
+    genogramCurrent: string;
+    genogramBackground: string;
+    genogramBrief: string;
+    attachment: { child: string; parent: string };
+    ffas: Record<string, number>;
+    fad: Record<string, number>;
+    psi: Record<string, number>;
+    ppfq: Record<string, number>;
+    apq: Record<string, number>;
+  };
+  school: {
+    studentClimate: Record<string, number>;
+    parentClimate: Record<string, number>;
+  };
   ucla: UCLAPTSDData;
   pcl5: PCL5Data;
   resilience: {

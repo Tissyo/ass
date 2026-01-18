@@ -10,167 +10,145 @@ interface Props {
 
 const SummarySection: React.FC<Props> = ({ data, onChange }) => {
   const handleChange = (field: string, value: string) => onChange({ ...data.summary, [field]: value });
-  const { age } = data.patient;
-  const isChild = age > 0 && age < 13;
 
+  // 计算多维度标准化得分 (0-100) 用于雷达图
   const radarData = useMemo(() => {
-    const res = data.resilience;
-    let p = 0, f = 0, s = 0;
+    const isAdult = data.patient.age >= 18;
 
-    const getScore = (map: any, ids: string[], max: number, min: number = 0) => {
-      let sum = 0;
-      ids.forEach(id => sum += (map[id] || min));
-      return ((sum - (ids.length * min)) / (ids.length * (max - min))) * 100;
-    };
+    // 1. 家庭系统 (基于 FAD-12, 满分48, 反向题计分由于简化暂按平均值处理)
+    const fadScores = Object.values(data.family.fad) as number[];
+    const fadScore = fadScores.reduce((a, b) => a + (Number(b) || 0), 0);
+    const familyDim = Math.min(100, (fadScore / 48) * 100) || 50;
 
-    if (age > 0 && age < 13) {
-      p = getScore(res.child.scores, ['1', '2', '3'], 2);
-      f = getScore(res.child.scores, ['4', '5'], 2);
-      s = getScore(res.child.scores, ['6', '7', '8'], 2);
-    } else if (age >= 13 && age < 18) {
-      p = getScore(res.teen.scores, ['1', '2', '3', '4'], 5, 1);
-      f = getScore(res.teen.scores, ['5', '6', '7', '8'], 5, 1);
-      s = getScore(res.teen.scores, ['9', '10', '11', '12'], 5, 1);
-    } else if (age >= 18) {
-      const cdScore = Object.values(res.adult.cdrisc).reduce<number>((acc, cur) => acc + (Number(cur) || 0), 0);
-      p = (cdScore / 40) * 100;
-      f = getScore(res.adult.mspss, ['3', '4', '8', '11'], 7, 1);
-      s = getScore(res.adult.mspss, ['1', '2', '6', '7', '9', '10', '12'], 7, 1);
+    // 2. 环境支持 (基于学生学校氛围, 满分124)
+    const schoolScores = Object.values(data.school.studentClimate) as number[];
+    const schoolScore = schoolScores.reduce((a, b) => a + (Number(b) || 0), 0);
+    const schoolDim = Math.min(100, (schoolScore / 124) * 100) || 50;
+
+    // 3. 内在复原力
+    let internalRes = 0;
+    if (isAdult) {
+      const cdriscScores = Object.values(data.resilience.adult.cdrisc) as number[];
+      internalRes = cdriscScores.reduce((a, b) => a + (Number(b) || 0), 0);
+      internalRes = (internalRes / 40) * 100;
+    } else {
+      const childScores = Object.values(data.resilience.child.scores) as number[];
+      internalRes = childScores.reduce((a, b) => a + (Number(b) || 0), 0);
+      internalRes = (internalRes / 16) * 100;
     }
+    const internalDim = Math.min(100, internalRes) || 50;
+
+    // 4. 社交支持 (基于 MSPSS, 满分84)
+    const mspssScores = Object.values(data.resilience.adult.mspss) as number[];
+    const mspssScore = mspssScores.reduce((a, b) => a + (Number(b) || 0), 0);
+    const externalDim = Math.min(100, (mspssScore / 84) * 100) || 50;
+
+    // 5. 情绪稳定 (100 - 创伤症状百分比)
+    const traumaScore = isAdult ? data.pcl5.totalScore : data.ucla.totalScore;
+    const maxTrauma = isAdult ? 80 : 28; 
+    const stabilityDim = Math.max(0, 100 - (traumaScore / maxTrauma) * 100) || 80;
 
     return [
-      { label: isChild ? '我的小超能力' : '个体韧性', value: Math.max(5, p || 0), icon: '⭐', color: 'text-amber-400' },
-      { label: isChild ? '温暖的避风港' : '家庭支持', value: Math.max(5, f || 0), icon: '🏠', color: 'text-rose-400' },
-      { label: isChild ? '我的秘密基地' : '社会环境', value: Math.max(5, s || 0), icon: '🌈', color: 'text-indigo-400' }
+      { label: '家庭动力', value: familyDim },
+      { label: '环境支持', value: schoolDim },
+      { label: '内在韧性', value: internalDim },
+      { label: '社交资源', value: externalDim },
+      { label: '情绪稳定', value: stabilityDim },
     ];
-  }, [data.resilience, data.patient.age]);
+  }, [data]);
+
+  const isRisk = data.cssrs.q4 || data.cssrs.q5 || data.cssrs.q6;
 
   return (
-    <section>
-      <header className="mb-16 text-center">
-        <h2 className="serif text-4xl text-slate-900 mb-4">{isChild ? '成长能量探索报告' : '临床评估结论报告'}</h2>
-        <div className="flex justify-center items-center space-x-6">
-          <Badge label="ID" value={data.patient.id || '未编号'} />
-          <Badge label="Date" value={data.patient.date} />
-          <Badge label="Clinician" value={data.patient.clinician || '未署名'} />
+    <section className="space-y-12">
+      <header className="text-center mb-16">
+        <h2 className="serif text-4xl text-slate-900 mb-4 tracking-tight">临床评估报告全文</h2>
+        <div className="flex justify-center space-x-8 text-xs font-bold text-slate-400 uppercase tracking-widest">
+          <span>ID: {data.patient.id}</span>
+          <span>DATE: {data.patient.date}</span>
+          <span>CLINICIAN: {data.patient.clinician}</span>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-        {/* 左侧：可视化 */}
-        <div className="lg:col-span-5">
-          <div className={`${isChild ? 'bg-gradient-to-br from-yellow-50 via-white to-blue-50 border-white shadow-xl' : 'bg-warm-50 border-warm-200'} rounded-4xl p-10 border flex flex-col items-center transition-all`}>
-            <h3 className={`serif text-lg mb-10 ${isChild ? 'text-amber-700' : 'text-brand-800'}`}>
-              {isChild ? '你的能量成长乐园 🎡' : '复原力与资源画像'}
-            </h3>
-            
-            {isChild ? (
-              <div className="w-full space-y-12">
-                {radarData.map(d => (
-                  <div key={d.label} className="relative">
-                    <div className="flex justify-between items-end mb-3">
-                      <div className="flex items-center">
-                        <span className="text-3xl mr-3">{d.icon}</span>
-                        <div>
-                          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{d.label === '我的小超能力' ? 'Personal' : d.label === '温暖的避风港' ? 'Family' : 'World'}</p>
-                          <p className={`font-bold text-sm ${d.color}`}>{d.label}</p>
-                        </div>
-                      </div>
-                      <p className="text-2xl font-black text-slate-700">{Math.round(d.value)}<span className="text-xs ml-0.5 opacity-50">%</span></p>
-                    </div>
-                    <div className="h-4 w-full bg-white/60 rounded-full overflow-hidden border border-white shadow-inner">
-                      <div 
-                        className={`h-full transition-all duration-1000 ease-out rounded-full ${
-                          d.label === '我的小超能力' ? 'bg-gradient-to-r from-amber-300 to-yellow-400' :
-                          d.label === '温暖的避风港' ? 'bg-gradient-to-r from-rose-300 to-pink-400' :
-                          'bg-gradient-to-r from-indigo-300 to-blue-400'
-                        }`}
-                        style={{ width: `${d.value}%` }}
-                      >
-                        <div className="w-full h-full opacity-30 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <>
-                <RadarChart data={radarData} size={280} />
-                <div className="mt-12 grid grid-cols-3 gap-8 w-full">
-                  {radarData.map(d => (
-                    <div key={d.label} className="text-center">
-                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">{d.label}</p>
-                      <p className="text-2xl font-black text-brand-700">{Math.round(d.value)}<span className="text-xs ml-0.5">%</span></p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          
-          <div className="mt-8 p-6 bg-slate-50 rounded-3xl border border-slate-100 italic text-xs text-slate-400 leading-relaxed">
-            {isChild ? '* 这是一个为你准备的“能量包”，它记录了你在成长中积累的勇气、爱和支持。' : '* 数字化画像基于 CD-RISC、MSPSS 及 CYRM 等量表数据转化，用于辅助评估资源储备。'}
-          </div>
-        </div>
-
-        {/* 右侧：文案输出 */}
-        <div className="lg:col-span-7 space-y-10">
-          <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className={`w-1.5 h-4 ${isChild ? 'bg-amber-400' : 'bg-brand-600'} rounded-full`}></div>
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{isChild ? '成长探险记录 (Clinical Formulation)' : '临床画像分析 (Formulation)'}</label>
-            </div>
-            <textarea 
-              value={data.summary.clinicalFormulation}
-              onChange={(e) => handleChange('clinicalFormulation', e.target.value)}
-              className={`w-full h-[480px] border-2 ${isChild ? 'border-amber-100 focus:border-amber-300' : 'border-warm-100 focus:border-brand-200'} rounded-3xl p-8 text-slate-700 leading-loose outline-none transition-colors shadow-inner text-sm serif`}
-              placeholder={isChild ? "在这里记录下孩子闪闪发光的时刻，以及我们如何一起面对挑战..." : "请通过 AI 生成或手动录入临床综合分析，包含核心症状描述、风险程度判断及复原资源分析..."}
-            />
-          </div>
-        </div>
-      </div>
-      
-      {/* 签名区域 */}
-      <div className="mt-24 pt-12 border-t border-warm-200">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          {/* 来访者/监护人 */}
-          <div className="space-y-6">
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Client / Guardian Signature</p>
-            <div className="h-10 border-b border-slate-200"></div>
-            <p className="text-xs text-slate-500 font-bold">来访者/监护人签名</p>
-            <p className="text-[9px] text-slate-300">日期：____ 年 ____ 月 ____ 日</p>
-          </div>
-
-          {/* 主评估师 */}
-          <div className="space-y-6">
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Lead Clinician Signature</p>
-            <div className="h-10 border-b border-slate-200"></div>
-            <p className="text-xs text-slate-500 font-bold">主评估师：{data.patient.clinician || '________'}</p>
-            <p className="text-[9px] text-slate-300">日期：{data.patient.date}</p>
-          </div>
-
-          {/* 督导 */}
-          <div className="space-y-6">
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Supervisor Signature</p>
-            <div className="h-10 border-b border-slate-200"></div>
-            <p className="text-xs text-slate-500 font-bold">临床督导签字</p>
-            <p className="text-[9px] text-slate-300">日期：____ 年 ____ 月 ____ 日</p>
-          </div>
+      {/* 可视化核心区 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center bg-warm-50/50 p-10 rounded-[40px] border border-warm-100">
+        <div className="flex justify-center no-print">
+          <RadarChart data={radarData} size={400} />
         </div>
         
-        <div className="mt-16 flex justify-between items-end text-[9px] font-bold text-slate-200 uppercase tracking-[0.3em]">
-          <span>Jianji clinical protocol v2.5.0</span>
-          <span>Confidential medical record</span>
+        <div className="space-y-6">
+           <h3 className="serif text-2xl text-slate-800">多维系统评估画像</h3>
+           <div className="grid grid-cols-2 gap-4">
+              <MetricItem label="安全状态" status={isRisk ? 'danger' : 'safe'} />
+              <MetricItem label="家庭功能度" value={`${radarData[0].value.toFixed(0)}%`} />
+              <MetricItem label="环境支持度" value={`${radarData[1].value.toFixed(0)}%`} />
+              <MetricItem label="核心稳定性" value={`${radarData[4].value.toFixed(0)}%`} />
+           </div>
+           <p className="text-xs text-slate-400 leading-relaxed italic mt-4">
+             * 注：雷达图展示了案主心理社会系统五个维度的平衡状态。高分代表该领域具备较强的保护性因子或资源，低分则提示需要重点关注的临床干预方向。
+           </p>
         </div>
       </div>
+
+      {/* AI 画像核心分析 */}
+      <div className="space-y-4 pt-8">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="w-1.5 h-4 bg-brand-600 rounded-full"></div>
+          <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">临床画像分析 (Clinical Formulation)</label>
+        </div>
+        <textarea 
+          value={data.summary.clinicalFormulation}
+          onChange={(e) => handleChange('clinicalFormulation', e.target.value)}
+          className="w-full h-[600px] border-2 border-warm-100 focus:border-brand-200 rounded-[40px] p-10 text-slate-700 leading-relaxed outline-none transition-all shadow-inner serif text-base"
+          placeholder="此处将展示 AI 生成或手动填写的临床画像，整合症状表现、家庭动力及环境支持系统的深度分析..."
+        />
+      </div>
+
+      {/* 结构化访谈内容摘要 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-[13px] p-10 bg-slate-50 rounded-[40px] border border-slate-100 text-slate-600 leading-relaxed">
+        <div className="space-y-4">
+          <p className="font-black text-slate-400 uppercase tracking-widest text-[10px]">家谱图访谈关键点：</p>
+          <div className="space-y-2">
+            <div><span className="font-bold">当前状况:</span> {data.family.genogramCurrent || '无记录'}</div>
+            <div><span className="font-bold">广泛背景:</span> {data.family.genogramBackground || '无记录'}</div>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <p className="font-black text-slate-400 uppercase tracking-widest text-[10px]">依恋与性格形成：</p>
+          <div>
+            <p className="font-bold text-slate-800 mb-1">早年依恋状态:</p>
+            <p className="mb-4">{data.family.attachment.parent || '未记录'}</p>
+            <p className="font-bold text-slate-800 mb-1">代际传递影响:</p>
+            <p>{data.family.attachment.child || '未记录'}</p>
+          </div>
+        </div>
+      </div>
+
+      <footer className="mt-20 pt-10 border-t border-slate-100 flex justify-between items-end">
+        <div className="space-y-4">
+          <div className="w-48 h-px bg-slate-200"></div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">评估师签名: {data.patient.clinician}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[8px] font-black text-slate-200 uppercase tracking-[0.4em] mb-1">Confidential Clinical Record</p>
+          <p className="text-[10px] text-slate-300">© 2025 见己 · 深度评估系统</p>
+        </div>
+      </footer>
     </section>
   );
 };
 
-const Badge: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex items-center space-x-2">
-    <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">{label}:</span>
-    <span className="text-xs font-bold text-slate-600">{value}</span>
+const MetricItem = ({ label, value, status }: { label: string; value?: string; status?: 'danger' | 'safe' }) => (
+  <div className="bg-white p-4 rounded-2xl border border-warm-200 flex flex-col justify-center shadow-sm">
+    <span className="text-[10px] font-black text-slate-300 uppercase mb-1 tracking-tight">{label}</span>
+    {status ? (
+      <div className="flex items-center">
+        <div className={`w-2 h-2 rounded-full mr-2 ${status === 'danger' ? 'bg-rose-500 animate-pulse' : 'bg-brand-500'}`}></div>
+        <span className={`text-sm font-bold ${status === 'danger' ? 'text-rose-600' : 'text-brand-700'}`}>{status === 'danger' ? '预警' : '安全'}</span>
+      </div>
+    ) : (
+      <span className="text-lg font-black text-slate-700">{value}</span>
+    )}
   </div>
 );
 
